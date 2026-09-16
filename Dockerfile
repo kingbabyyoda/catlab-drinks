@@ -20,5 +20,11 @@ RUN composer install
 RUN npm install
 RUN npm run prod
 
-
-
+# Render blocks privilege escalation (sudo). The base image's entrypoint
+# requires sudo, so use a small root entrypoint that runs CatLab startup
+# directly and then launches Apache.
+USER root
+COPY docker/render-entrypoint.sh /usr/local/bin/render-entrypoint.sh
+RUN chmod +x /usr/local/bin/render-entrypoint.sh
+ENTRYPOINT ["/usr/local/bin/render-entrypoint.sh"]
+CMD ["apache2-foreground"]
