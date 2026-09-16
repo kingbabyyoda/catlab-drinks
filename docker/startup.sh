@@ -7,6 +7,20 @@ set -e
 
 echo "==> CatLab Drinks: Running startup script..."
 
+# Aiven may expose the service URI with a private/dynamic hostname while
+# public access uses the same hostname with a `public-` prefix. Render runs
+# outside the Aiven VPC, so try the public endpoint if the supplied hostname
+# cannot be resolved from the Render runtime.
+if [ -n "${DB_HOST:-}" ] && command -v getent >/dev/null 2>&1; then
+    if ! getent hosts "$DB_HOST" >/dev/null 2>&1; then
+        PUBLIC_DB_HOST="public-${DB_HOST#public-}"
+        if getent hosts "$PUBLIC_DB_HOST" >/dev/null 2>&1; then
+            echo "==> DB_HOST does not resolve from Render; using Aiven public hostname."
+            export DB_HOST="$PUBLIC_DB_HOST"
+        fi
+    fi
+fi
+
 # --- .env file ---
 if [ ! -f .env ]; then
     echo "==> No .env file found, copying from .env.example..."
